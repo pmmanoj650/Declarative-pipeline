@@ -1,0 +1,80 @@
+pipeline
+{
+      agent any
+      stages
+      {
+             stage('continuous Downloads')
+             {
+                     steps
+                     {
+                       script
+                       {
+                              try
+                              {
+                              git 'https://github.com/pmmanoj650/java-demo-project.git'
+                              }
+                              catch(Exception e)
+                              {
+                              mail bcc: '', body: '', cc: 'dev@gmail.com', from: '', replyTo: '', subject: 'jenkins unable to download git repo', to: 'git@gmail.com'
+                              exit(1)
+                              } 
+                       }
+                     }
+             }
+              stage('continuous build')
+             {
+                     steps
+                     {
+                          script
+                       {
+                              try
+                              {
+                                   sh 'mvn package'
+                              }
+                              catch(Exception e)
+                              {
+                              mail bcc: '', body: '', cc: 'dev@gmail.com', from: '', replyTo: '', subject: 'jenkins unable to download git repo', to: 'git@gmail.com'
+                              exit(1)
+                              } 
+                        }
+                     }
+             }
+               stage('continuous deployment to test environment')
+             {
+                     steps
+                     {
+                          sh 'scp /var/lib/jenkins/workspace/Development/webapp/target/webapp.war root@172.31.87.47:/var/lib/tomcat9/webapps/testenv.war'
+                     }
+             }
+               stage('continuous testing')
+             {
+                     steps
+                     {
+                             git 'https://github.com/pmmanoj650/Testing.git'
+                             sh 'java -jar /var/lib/jenkins/workspace/Development/testing.jar'
+
+                     }
+             }
+               stage('continuous deployment to prodenv')
+             {
+                     steps
+                     {
+                         script
+                          {  
+                             try 
+                             {
+                            input 'waiting for approval from the DMadmin'
+                            sh 'scp /var/lib/jenkins/workspace/Development/webapp/target/webapp.war root@172.31.92.72:/var/lib/tomcat9/webapps/prodenv.war'
+                              }
+                             catch(Exception e)
+                             {
+                              mail bcc: '', body: '', cc: 'dev@gmail.com', from: '', replyTo: '', subject: 'jenkins unable to download git repo', to: 'git@gmail.com'
+                              exit(1)
+                             }  
+                          }
+                              
+
+                     }
+             }
+        }
+}
